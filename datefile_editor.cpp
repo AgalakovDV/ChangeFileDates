@@ -41,7 +41,7 @@ void DateFile_Editor::printDirInfo() {
 
 int DateFile_Editor::ChangeDate(){
     this->countFiles = QDir(this->sPathDir).entryList(QDir::Files).count();
-    this->printDirInfo();
+//    this->printDirInfo();
 
     QStringList fileNames = QDir(this->sPathDir).entryList(QDir::Files);
     int delta = this->radius_minute / fileNames.size(); // среднее время выполнение одного файла в минутах
@@ -80,7 +80,6 @@ int DateFile_Editor::ChangeDate(){
         }
         curDateTime = curDateTime.addSecs(delta * 60);
     }
-
 
     return 0;
 }
