@@ -2,7 +2,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QDebug>
-//#include "datefile_editor.h"
+
+#include "Enums.h"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -30,8 +31,7 @@ int MainWindow::GetInfo(){
     QString timeStr = ui->textEdit_newTimeCreate->toPlainText();
     QStringList qsl = timeStr.split(":");
     if (qsl.size() != 3){ // ошибка во времени
-        qDebug() << "-1";
-        return -1;
+        return WRONG_FORMAT;
     }
 
     bool checkTime[3] = {false, false, false};
@@ -39,8 +39,7 @@ int MainWindow::GetInfo(){
     int m = qsl.at(1).toInt(checkTime + 1);
     int s = qsl.at(2).toInt(checkTime + 2);
     if (!(checkTime[0] && checkTime[1] && checkTime[2]) || (h < 0 || h > 23) || (m < 0 || m > 59) || (s < 0 || s > 59)){ // неправильно ввели время
-        qDebug() << -2;
-        return -2;
+        return WRONG_TIME;
     }
 
     QTime _time = QTime(h,m,s);                 // время пользователя
@@ -51,13 +50,12 @@ int MainWindow::GetInfo(){
     int _radius = razbros.time().hour() * 60 + razbros.time().minute();   // разброс в минутах
 
     if (_radius < 0){ // какая-то ошибка с разбросом
-        qDebug() << -3;
-        return -3;
+        return UNEXPECTED_ERROR;
     }
 
-    qDebug() << "_sPathDir" << _sPathDir;
-    qDebug() << "_seed" << _seed.date() << " " << _seed.time();
-    qDebug() << "_radius_hours" << _radius;
+//    qDebug() << "_sPathDir" << _sPathDir;
+//    qDebug() << "_seed" << _seed.date() << " " << _seed.time();
+//    qDebug() << "_radius_hours" << _radius;
 
     //изменяем значения полей
     this->pDateEditor->SetPathDir(_sPathDir);
@@ -67,7 +65,7 @@ int MainWindow::GetInfo(){
     // запускаем алгоритм изменения даты
     this->pDateEditor->ChangeDate();
 
-    return 0;
+    return OK;
 }
 
 
@@ -92,9 +90,22 @@ void MainWindow::on_pushButton_ok_clicked()
 
     }
     int er = this->GetInfo();
-    if (!er) {
+    switch (er){
+    case OK:
         QMessageBox::information(0, "Congratulation", "Поздравляем! Даты файлов были успешно изменены!");
         this->change_flag = false;
+        break;
+    case WRONG_FORMAT:
+        QMessageBox::critical(0, "Error", "Неверный формат времени. Укажите время через двоеточие в формате 'часы:минуты:секунды'.");
+        break;
+    case WRONG_TIME:
+        QMessageBox::critical(0, "Error", "Ошибка во времени. Укажите время через двоеточие в формате 'чч:мм:сс'.");
+        break;
+    case UNEXPECTED_ERROR:
+        QMessageBox::critical(0, "Error", "Непредвиденная ошибка. Попробуйте изменить разброс.");
+        break;
+    default:
+        break;
     }
 
 }
@@ -108,10 +119,9 @@ void MainWindow::on_pushButton_searchDir_clicked()
     if (dialog.exec() != QDialog::Accepted)
         return;
 
-    QString fileNameStr = dialog.selectedFiles().first();
+    QString fileNameStr = dialog.selectedFiles().at(0);
     int pos_dir = fileNameStr.lastIndexOf("/");
     QString dirStr = fileNameStr.mid(0, pos_dir);
-    QDir newDir = QDir(dirStr);
     ui->label_curPath->setText(dirStr);
 
     this->change_flag = true;

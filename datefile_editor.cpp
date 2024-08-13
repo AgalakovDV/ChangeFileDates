@@ -40,12 +40,12 @@ void DateFile_Editor::printDirInfo() {
 
 
 int DateFile_Editor::ChangeDate(){
-    this->countFiles = QDir(this->sPathDir).entryList(QDir::Files).count();
+    QStringList fileNames = QDir(this->sPathDir).entryList(QDir::Files);
+    this->countFiles = fileNames.count();
 //    this->printDirInfo();
 
-    QStringList fileNames = QDir(this->sPathDir).entryList(QDir::Files);
-    int delta = this->radius_minute / fileNames.size(); // среднее время выполнение одного файла в минутах
-    int sec_min_radius = delta * 60 / this->divider;            // уклонение от среднего в секундах
+    int delta = this->radius_minute * 60 / fileNames.size(); // среднее время выполнение одного файла в секундах
+    int sec_min_radius = delta / this->divider;              // уклонение от среднего в секундах
     qint64 msec = QDateTime::currentMSecsSinceEpoch();
     uint uSeed = 0;
     if (msec < 0)
@@ -56,7 +56,7 @@ int DateFile_Editor::ChangeDate(){
 
     QDateTime curDateTime = QDateTime(seed);
 
-    qDebug() << fileNames;
+//    qDebug() << fileNames;
     for (int i = 0; i < fileNames.size(); ++i) {
         QString mName = fileNames.at(i);
         QFile curFile = QFile(this->sPathDir + "/" + mName);
@@ -64,21 +64,21 @@ int DateFile_Editor::ChangeDate(){
         {
             bool check_1 = false;
             bool check_2 = false;
-            QDateTime resDateTime = curDateTime.addSecs(delta * 60 + deviations.at(i));
+            QDateTime resDateTime = curDateTime.addSecs(delta + deviations.at(i));
             check_1 = curFile.setFileTime(resDateTime, QFileDevice::FileBirthTime);
             check_2 = curFile.setFileTime(resDateTime, QFileDevice::FileModificationTime);
-            qDebug() << " имя файла: " << curFile.fileName()
-                     << "\n\t новая дата создания: " << curFile.fileTime(QFileDevice::FileBirthTime)
-                     << "\n\t новая дата изменения: " << curFile.fileTime(QFileDevice::FileModificationTime);
+//            qDebug() << " имя файла: " << curFile.fileName()
+//                     << "\n\t новая дата создания: " << curFile.fileTime(QFileDevice::FileBirthTime)
+//                     << "\n\t новая дата изменения: " << curFile.fileTime(QFileDevice::FileModificationTime);
             curFile.close();
             if (!check_1 || !check_2){
-                qDebug() << "вот и всё никто не ждет";
+                qDebug() << "Не вышло изменить дату файла";
             }
         }
         else{
             qDebug() << " Невозможно открыть файл " << curFile.fileName();
         }
-        curDateTime = curDateTime.addSecs(delta * 60);
+        curDateTime = curDateTime.addSecs(delta);
     }
 
     return 0;
